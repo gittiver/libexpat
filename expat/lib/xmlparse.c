@@ -665,7 +665,7 @@ struct XML_ParserStruct {
   const char *m_parseEndPtr;
   size_t m_partialTokenBytesBefore; /* used in heuristic to avoid O(n^2) */
   XML_Bool m_reparseDeferralEnabled;
-  int m_lastBufferRequestSize;
+  size_t m_lastBufferRequestSize;
   XML_Char *m_dataBuf;
   XML_Char *m_dataBufEnd;
   XML_StartElementHandler m_startElementHandler;
@@ -1923,8 +1923,8 @@ XML_SetHashSalt(XML_Parser parser, unsigned long hash_salt) {
 }
 
 enum XML_Status XMLCALL
-XML_Parse(XML_Parser parser, const char *s, int len, int isFinal) {
-  if ((parser == NULL) || (len < 0) || ((s == NULL) && (len != 0))) {
+XML_Parse(XML_Parser parser, const char *s, size_t len, int isFinal) {
+  if ((parser == NULL) || (len == ((size_t)-1))|| ((s == NULL) && (len != 0))) {
     if (parser != NULL)
       parser->m_errorCode = XML_ERROR_INVALID_ARGUMENT;
     return XML_STATUS_ERROR;
@@ -2034,7 +2034,7 @@ XML_Parse(XML_Parser parser, const char *s, int len, int isFinal) {
 }
 
 enum XML_Status XMLCALL
-XML_ParseBuffer(XML_Parser parser, int len, int isFinal) {
+XML_ParseBuffer(XML_Parser parser, size_t len, int isFinal) {
   const char *start;
   enum XML_Status result = XML_STATUS_OK;
 
@@ -2105,7 +2105,7 @@ XML_ParseBuffer(XML_Parser parser, int len, int isFinal) {
 }
 
 void *XMLCALL
-XML_GetBuffer(XML_Parser parser, int len) {
+XML_GetBuffer(XML_Parser parser, size_t len) {
   if (parser == NULL)
     return NULL;
   if (len < 0) {
