@@ -975,9 +975,9 @@ tmain(int argc, XML_Char **argv) {
 
   float attackMaximumAmplification = -1.0f; /* signaling "not set" */
   unsigned long long attackThresholdBytes = 0;
-  XML_Bool attackThresholdGiven = XML_FALSE;
+  bool attackThresholdGiven = false;
 
-  XML_Bool disableDeferral = XML_FALSE;
+  bool disableDeferral = false;
 
   int exitCode = XMLWF_EXIT_SUCCESS;
   enum XML_ParamEntityParsing paramEntityParsing
@@ -1123,7 +1123,7 @@ tmain(int argc, XML_Char **argv) {
                     T(" (needs an integer from 0 to 2^64-1)"));
         exit(XMLWF_EXIT_USAGE_ERROR);
       }
-      attackThresholdGiven = XML_TRUE;
+      attackThresholdGiven = true;
 #if XML_GE == 0
       ftprintf(stderr,
                T("Warning: Given attack threshold ignored")
@@ -1132,7 +1132,7 @@ tmain(int argc, XML_Char **argv) {
       break;
     }
     case T('q'): {
-      disableDeferral = XML_TRUE;
+      disableDeferral = true;
       j++;
       break;
     }

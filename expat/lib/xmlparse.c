@@ -485,7 +485,7 @@ static enum XML_Error processInternalEntity(XML_Parser parser, ENTITY *entity,
                                             XML_Bool betweenDecl);
 static enum XML_Error doContent(XML_Parser parser, int startTagLevel,
                                 const ENCODING *enc, const char *start,
-                                const char *end, const char **endPtr,
+                                const char *end, const char **nextPtr,
                                 XML_Bool haveMore, enum XML_Account account);
 static enum XML_Error doCdataSection(XML_Parser parser, const ENCODING *enc,
                                      const char **startPtr, const char *end,
@@ -522,8 +522,9 @@ static ATTRIBUTE_ID *getAttributeId(XML_Parser parser, const ENCODING *enc,
                                     const char *start, const char *end);
 static int setElementTypePrefix(XML_Parser parser, ELEMENT_TYPE *elementType);
 #if XML_GE == 1
-static enum XML_Error storeEntityValue(XML_Parser parser, const ENCODING *enc,
-                                       const char *start, const char *end,
+static enum XML_Error
+storeEntityValue(XML_Parser parser, const ENCODING *enc,
+                 const char *entityTextPtr, const char *entityTextEnd,
                                        enum XML_Account account);
 #else
 static enum XML_Error storeSelfEntityValue(XML_Parser parser, ENTITY *entity);
@@ -538,7 +539,7 @@ static void reportDefault(XML_Parser parser, const ENCODING *enc,
 static const XML_Char *getContext(XML_Parser parser);
 static XML_Bool setContext(XML_Parser parser, const XML_Char *context);
 
-static void FASTCALL normalizePublicId(XML_Char *s);
+static void FASTCALL normalizePublicId(XML_Char *publicId);
 
 static DTD *dtdCreate(const XML_Memory_Handling_Suite *ms);
 /* do not call if m_parentParser != NULL */
@@ -551,8 +552,9 @@ static int copyEntityTable(XML_Parser oldParser, HASH_TABLE *newTable,
                            STRING_POOL *newPool, const HASH_TABLE *oldTable);
 static NAMED *lookup(XML_Parser parser, HASH_TABLE *table, KEY name,
                      size_t createSize);
-static void FASTCALL hashTableInit(HASH_TABLE *table,
-                                   const XML_Memory_Handling_Suite *ms);
+static void FASTCALL
+hashTableInit(HASH_TABLE *p, const XML_Memory_Handling_Suite *ms);
+
 static void FASTCALL hashTableClear(HASH_TABLE *table);
 static void FASTCALL hashTableDestroy(HASH_TABLE *table);
 static void FASTCALL hashTableIterInit(HASH_TABLE_ITER *iter,
@@ -601,7 +603,7 @@ static void accountingReportDiff(XML_Parser rootParser,
                                  const char *before, const char *after,
                                  ptrdiff_t bytesMore, int source_line,
                                  enum XML_Account account);
-static XML_Bool accountingDiffTolerated(XML_Parser originParser, int tok,
+static bool accountingDiffTolerated(XML_Parser originParser, int tok,
                                         const char *before, const char *after,
                                         int source_line,
                                         enum XML_Account account);
@@ -728,7 +730,7 @@ struct XML_ParserStruct {
   TAG *m_freeTagList;
   BINDING *m_inheritedBindings;
   BINDING *m_freeBindingList;
-  int m_attsSize;
+  size_t m_attsSize;
   int m_nSpecifiedAtts;
   int m_idAttIndex;
   ATTRIBUTE *m_atts;
@@ -1000,7 +1002,7 @@ get_hash_secret_salt(XML_Parser parser) {
 static enum XML_Error
 callProcessor(XML_Parser parser, const char *start, const char *end,
               const char **endPtr) {
-  const size_t have_now = EXPAT_SAFE_PTR_DIFF(end, start);
+  const size_t have_now = end>start ? ((size_t)EXPAT_SAFE_PTR_DIFF(end, start)) : 0;
 
   if (parser->m_reparseDeferralEnabled
       && ! parser->m_parsingStatus.finalBuffer) {
@@ -1923,7 +1925,7 @@ XML_SetHashSalt(XML_Parser parser, unsigned long hash_salt) {
 }
 
 enum XML_Status XMLCALL
-XML_Parse(XML_Parser parser, const char *s, size_t len, int isFinal) {
+XML_Parse(XML_Parser parser, const char *s, size_t len, bool isFinal) {
   if (parser==NULL) {
     return XML_STATUS_ERROR;
   } else if ((s == NULL) && (len != 0)) {
@@ -2035,7 +2037,7 @@ XML_Parse(XML_Parser parser, const char *s, size_t len, int isFinal) {
 }
 
 enum XML_Status XMLCALL
-XML_ParseBuffer(XML_Parser parser, size_t len, int isFinal) {
+XML_ParseBuffer(XML_Parser parser, size_t len, bool isFinal) {
   const char *start;
   enum XML_Status result = XML_STATUS_OK;
 
@@ -2075,7 +2077,7 @@ XML_ParseBuffer(XML_Parser parser, size_t len, int isFinal) {
   parser->m_bufferEnd += len;
   parser->m_parseEndPtr = parser->m_bufferEnd;
   parser->m_parseEndByteIndex += len;
-  parser->m_parsingStatus.finalBuffer = (XML_Bool)isFinal;
+  parser->m_parsingStatus.finalBuffer = isFinal;
 
   parser->m_errorCode = callProcessor(parser, start, parser->m_parseEndPtr,
                                       &parser->m_bufferPtr);
@@ -3370,7 +3372,7 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
   }
 
   if (n + nDefaultAtts > parser->m_attsSize) {
-    int oldAttsSize = parser->m_attsSize;
+    size_t oldAttsSize = parser->m_attsSize;
     ATTRIBUTE *temp;
 #ifdef XML_ATTR_INFO
     XML_AttrInfo *temp2;
@@ -7890,7 +7892,7 @@ accountingReportDiff(XML_Parser rootParser,
   fprintf(stderr, "\"\n");
 }
 
-static XML_Bool
+static bool
 accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
                         const char *after, int source_line,
                         enum XML_Account account) {
@@ -7906,7 +7908,7 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
   }
 
   if (account == XML_ACCOUNT_NONE)
-    return XML_TRUE; /* because these bytes have been accounted for, already */
+    return true; /* because these bytes have been accounted for, already */
 
   unsigned int levelsAwayFromRootParser;
   const XML_Parser rootParser
@@ -7923,7 +7925,7 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
 
   /* Detect and avoid integer overflow */
   if (*additionTarget > (XmlBigCount)(-1) - (XmlBigCount)bytesMore)
-    return XML_FALSE;
+    return false;
   *additionTarget += bytesMore;
 
   const XmlBigCount countBytesOutput
@@ -7931,7 +7933,7 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
         + rootParser->m_accounting.countBytesIndirect;
   const float amplificationFactor
       = accountingGetCurrentAmplification(rootParser);
-  const XML_Bool tolerated
+  const bool tolerated
       = (countBytesOutput < rootParser->m_accounting.activationThresholdBytes)
         || (amplificationFactor
             <= rootParser->m_accounting.maximumAmplificationFactor);

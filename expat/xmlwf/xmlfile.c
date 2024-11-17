@@ -192,7 +192,7 @@ processStream(const XML_Char *filename, XML_Parser parser) {
     }
   }
   for (;;) {
-    int nread;
+    ssize_t nread;
     char *buf = (char *)XML_GetBuffer(parser, g_read_size_bytes);
     if (! buf) {
       if (filename != NULL)

@@ -176,7 +176,7 @@ struct encoding {
                                  const char *);
   int(PTRFASTCALL *nameLength)(const ENCODING *, const char *);
   const char *(PTRFASTCALL *skipS)(const ENCODING *, const char *);
-  int(PTRCALL *getAtts)(const ENCODING *enc, const char *ptr, int attsMax,
+  int(PTRCALL *getAtts)(const ENCODING *enc, const char *ptr, size_t attsMax,
                         ATTRIBUTE *atts);
   int(PTRFASTCALL *charRefNumber)(const ENCODING *enc, const char *ptr);
   int(PTRCALL *predefinedEntityName)(const ENCODING *, const char *,

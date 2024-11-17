@@ -1506,7 +1506,7 @@ PREFIX(isPublicId)(const ENCODING *enc, const char *ptr, const char *end,
 */
 
 static int PTRCALL
-PREFIX(getAtts)(const ENCODING *enc, const char *ptr, int attsMax,
+PREFIX(getAtts)(const ENCODING *enc, const char *ptr, size_t attsMax,
                 ATTRIBUTE *atts) {
   enum { other, inName, inValue } state = inName;
   int nAtts = 0;

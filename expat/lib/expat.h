@@ -45,6 +45,7 @@
 #define Expat_INCLUDED 1
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include "expat_external.h"
 
 #ifdef __cplusplus
@@ -785,13 +786,13 @@ XML_GetAttributeInfo(XML_Parser parser);
    values.
 */
 XMLPARSEAPI(enum XML_Status)
-XML_Parse(XML_Parser parser, const char *s, size_t len, int isFinal);
+XML_Parse(XML_Parser parser, const char *s, size_t len, bool isFinal);
 
 XMLPARSEAPI(void *)
 XML_GetBuffer(XML_Parser parser, size_t len);
 
 XMLPARSEAPI(enum XML_Status)
-XML_ParseBuffer(XML_Parser parser, size_t len, int isFinal);
+XML_ParseBuffer(XML_Parser parser, size_t len, bool isFinal);
 
 /* Stops parsing, causing XML_Parse() or XML_ParseBuffer() to return.
    Must be called from within a call-back handler, except when aborting
@@ -846,7 +847,7 @@ enum XML_Parsing { XML_INITIALIZED, XML_PARSING, XML_FINISHED, XML_SUSPENDED };
 
 typedef struct {
   enum XML_Parsing parsing;
-  XML_Bool finalBuffer;
+  bool finalBuffer;
 } XML_ParsingStatus;
 
 /* Returns status of parser with respect to being initialized, parsing,
